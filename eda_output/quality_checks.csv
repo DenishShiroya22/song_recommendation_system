@@ -1,0 +1,17 @@
+,rows
+danceability_outside_0_1,0
+energy_outside_0_1,0
+speechiness_outside_0_1,0
+acousticness_outside_0_1,0
+instrumentalness_outside_0_1,0
+liveness_outside_0_1,0
+valence_outside_0_1,0
+popularity_outside_0_100,0
+key_outside_0_11,0
+mode_outside_0_1,0
+duration_nonpositive,1
+duration_over_20_minutes_review,81
+tempo_nonpositive_review,157
+time_signature_zero_review,163
+time_signature_outside_0_to_7,0
+numeric_nonfinite,0

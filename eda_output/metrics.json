@@ -1,0 +1,13 @@
+{
+  "rows": 114000,
+  "columns_in_file": 21,
+  "unique_tracks": 89741,
+  "exact_duplicates_excluding_index": 450,
+  "repeated_track_ids": 16641,
+  "multi_genre_track_ids": 16299,
+  "rows_with_missing_values": 1,
+  "random_split_test_rows": 22800,
+  "random_split_test_rows_with_train_track_id": 7099,
+  "random_split_test_rows_with_train_artist_string": 18864,
+  "source_sha256": "b202fa49909b2d5cef71a04b1d21243cfeb36414535f2ca9272aa646721177bd"
+}

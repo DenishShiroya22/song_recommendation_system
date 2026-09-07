@@ -1,0 +1,13 @@
+{
+  "source_rows": 114000,
+  "exact_duplicates_removed": 450,
+  "excluded_rows_after_exact_dedup": 158,
+  "excluded_unique_track_ids": 158,
+  "additional_rows_collapsed_by_track_id": 23809,
+  "clean_rows": 89583,
+  "clean_columns": 18,
+  "tracks_with_multiple_genres": 16299,
+  "popularity_conflicts_resolved": 720,
+  "source_sha256": "b202fa49909b2d5cef71a04b1d21243cfeb36414535f2ca9272aa646721177bd",
+  "output_sha256": "a631979fc0356a02ae2dae0dcee34667b6e18f16db18cb9866d36fb2d73c450c"
+}
