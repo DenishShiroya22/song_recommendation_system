@@ -34,3 +34,7 @@ The source CSV was supplied locally. Its original source, collection date, and l
 ## Saving future changes
 
 After reviewing changes, stage the intended files, commit with a descriptive message, and push to the configured GitHub remote. Commits are created explicitly; no automatic commit schedule is configured.
+
+## Feature engineering
+
+Run `python feature_engineering.py` to generate standardized audio and multi-hot genre features. Run `python -m unittest test_feature_engineering.py` to check preprocessing behavior. See `features/README.md` for the saved matrices, row mapping, reuse instructions and training-only fit option. The default fits the entire catalog for content-based retrieval.

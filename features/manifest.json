@@ -1,0 +1,13 @@
+{
+  "rows": 89583,
+  "fit_rows": 89583,
+  "audio_features": 8,
+  "genre_features": 114,
+  "combined_features": 122,
+  "dtype": "float32",
+  "format": "CSR sparse matrix",
+  "fit_scope": "full catalog for content-based retrieval",
+  "input_sha256": "a631979fc0356a02ae2dae0dcee34667b6e18f16db18cb9866d36fb2d73c450c",
+  "sklearn_version": "1.9.0",
+  "validation": "Saved matrices, all genre memberships, scaler statistics, and row mapping verified."
+}
