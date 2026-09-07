@@ -47,6 +47,7 @@ Run `python train_recommender.py` to build the cosine k-NN index, then `python r
 
 ## Streamlit website
 
-Start with `python -m streamlit run app.py` (on this Windows setup: `./.venv/Scripts/python.exe -m streamlit run app.py`). Open http://localhost:8501. Search by song/artist, select a recording, choose 5–50 recommendations, optionally exclude explicit tracks, and generate the playlist. Each recommendation opens in Spotify; playlist links can be downloaded as text. Spotify-account playlist saving is not connected.
+Start with `python -m streamlit run app.py` (on this Windows setup: `./.venv/Scripts/python.exe -m streamlit run app.py`). Open http://localhost:8501. Search by song/artist, select a recording, choose 5–50 recommendations, optionally exclude explicit tracks, and generate the playlist. Each recommendation has an exact-track Spotify link, and one recommendation at a time can be played through Spotify's embedded player. Playlist links can be downloaded as text. Spotify-account playlist saving is not connected.
 
 The app caches the model between requests and rebuilds the cache when the saved model changes. Run `python -m unittest test_app.py -v` to verify the website flow.
+
