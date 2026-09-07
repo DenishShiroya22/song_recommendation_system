@@ -1,0 +1,13 @@
+{
+  "songs": 89583,
+  "features": 122,
+  "algorithm": "brute-force k-nearest neighbors",
+  "metric": "cosine",
+  "sklearn_version": "1.9.0",
+  "fit_seconds": 0.2814846999826841,
+  "median_query_seconds_10_samples": 0.060764199995901436,
+  "validation": "10 seeded queries: exact cosine agreement, self-exclusion, unique results, ordering, save/load agreement.",
+  "scope": "Full-catalog instance-based retrieval; no supervised target or held-out relevance labels.",
+  "catalog_sha256": "a631979fc0356a02ae2dae0dcee34667b6e18f16db18cb9866d36fb2d73c450c",
+  "feature_sha256": "4c8b79157768a2dfac8ab7a5a5937ddbd54d9547b9fa100846ac21be6a0fc317"
+}
