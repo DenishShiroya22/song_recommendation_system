@@ -46,7 +46,7 @@ with st.sidebar:
     st.caption(f"{len(engine.catalog):,} songs to explore")
     st.caption("Matches are based on sound and genre. Select a recording to get started.")
     with st.expander("About the playlist"):
-        st.write("Recommendations come from this song catalog. Spotify links open individual tracks. Saving a playlist directly to your Spotify account is not connected.")
+        st.write("Recommendations come from this song catalog. Each Spotify link contains the exact track ID shown here. Spotify may change playback because of your plan, queue, region, or shuffle settings. Saving a playlist directly to your Spotify account is not connected.")
 
 with st.form("song_search"):
     query = st.text_input("Song title or artist", placeholder="Try Comedy Gen Hoshino", max_chars=200)
@@ -55,6 +55,8 @@ if submitted:
     st.session_state.pop("playlist", None)
     st.session_state.pop("playlist_signature", None)
     st.session_state.pop("selected_song", None)
+    st.session_state.pop("preview_song", None)
+    st.session_state["search_generation"] = st.session_state.get("search_generation", 0) + 1
     st.session_state["searched"] = True
     st.session_state["matches"] = engine.search(query,limit=30) if query.strip() else []
     st.session_state["empty_query"] = not query.strip()
@@ -69,11 +71,17 @@ elif not matches:
 else:
     lookup = {r["track_id"]:r for r in matches}
     st.caption(f"{len(matches)} matches shown. Choose your recording below.")
-    selected = st.selectbox("Choose a song", options=list(lookup), key="selected_song",
+    selection_key = "selected_song_" + str(st.session_state.get("search_generation", 0))
+    selected = st.selectbox("Choose a song", options=list(lookup), index=None, placeholder="Select the song and artist you want", key=selection_key,
         format_func=lambda key: lookup[key]["track_name"]+" — "+lookup[key]["artists"].replace(";", ", ")+" · "+lookup[key]["album_name"]+" · "+key[-6:])
+    st.session_state["selected_song"] = selected
+    if selected is None:
+        st.info("Choose the artist and recording you want. Songs with the same title can be covers or remixes.")
+        st.stop()
     seed = lookup[selected]
     st.markdown('<div class="hero"><div class="small-label">YOUR STARTING TRACK</div><h2>'+html.escape(seed["track_name"])+'</h2><div>'+html.escape(seed["artists"].replace(";", ", "))+'</div><p class="track-artist">'+html.escape(seed["track_genre"].replace(";", " · "))+'</p></div>',unsafe_allow_html=True)
-    st.link_button("Listen to your starting song ↗", seed["spotify_url"])
+    st.caption("Recording: " + seed["album_name"])
+    st.link_button("Open this recording in Spotify ↗", seed["spotify_url"])
     signature = (selected,count,clean_only)
     if st.button("Generate playlist",type="primary"):
         with st.spinner("Finding your next favorites…"):
@@ -101,9 +109,36 @@ else:
                 details.caption(" · ".join(reasons))
                 link.link_button("Open in Spotify ↗",track["spotify_url"])
         if playlist:
+            preview_lookup = {track["track_id"]: track for track in playlist}
+            preview_id = st.selectbox(
+                "Preview an exact recommendation",
+                options=list(preview_lookup),
+                index=None,
+                placeholder="Choose a song to play inside this page",
+                key="preview_song_" + selected + "_" + str(count) + "_" + str(clean_only),
+                format_func=lambda key: preview_lookup[key]["track_name"] + " — " + preview_lookup[key]["artists"].replace(";", ", "),
+            )
+            if preview_id:
+                st.session_state["preview_song"] = preview_id
+                st.caption("Spotify track ID: " + preview_id)
+                st.iframe(
+                    "https://open.spotify.com/embed/track/" + preview_id + "?utm_source=generator",
+                    height=160,
+                )
+                st.caption(
+                    "If Spotify skips after opening its website, check the queue and shuffle setting. "
+                    "Free mobile playback may choose a different song."
+                )
             st.download_button("Download playlist links",
                 data="\n".join(r["spotify_url"] for r in playlist),
                 file_name="songside_playlist.txt",mime="text/plain")
     elif "playlist" in st.session_state:
         st.caption("Your selection or settings changed. Generate a new playlist to update the results.")
+
+
+
+
+
+
+
 
