@@ -51,7 +51,7 @@ Run `python train_recommender.py` to build the cosine k-NN index, then `python r
 
 ## Streamlit website
 
-Start with `python -m streamlit run app.py` (on this Windows setup: `./.venv/Scripts/python.exe -m streamlit run app.py`). Open http://localhost:8501. Search by song/artist, select a recording, choose 5–50 recommendations, adjust sound/genre weights, optionally exclude explicit tracks, and generate the playlist. Rate matches with thumbs up/down. Each recommendation has an exact-track Spotify link and an embedded preview. Download playlist links or connect Spotify to create a private playlist after configuration. Use http://127.0.0.1:8501/ for local Spotify OAuth testing.
+Start with `python -m streamlit run app.py` (on this Windows setup: `./.venv/Scripts/python.exe -m streamlit run app.py`). Open http://localhost:8501. Search by song/artist, select a recording, and generate a fixed 15-song playlist with 70% sound and 30% genre matching. Rate matches with thumbs up/down. Each recommendation has an exact-track Spotify link and an embedded preview. Download playlist links or connect Spotify to create a private playlist after configuration. Use http://127.0.0.1:8501/ for local Spotify OAuth testing.
 
 The app caches the model between requests and rebuilds the cache when the saved model or engine code changes. Run `python -m unittest discover -v` to verify the engine, website, feedback, and mocked Spotify integration.
 

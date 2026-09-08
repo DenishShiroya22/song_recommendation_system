@@ -10,7 +10,7 @@ Users still explicitly choose a recording. Search never treats a spelling match 
 
 ## 3. Separate sound and genre matching
 
-The website defaults to 70% sound and 30% genre. The sidebar slider controls the balance; regenerate the playlist after changing it.
+The website generates a fixed 15-song playlist using 70% sound and 30% genre. Playlist settings are not shown to users; explicit songs remain eligible. The Python API still supports custom weights for evaluation.
 
 The first eight columns of the existing matrix are standardized audio. Each audio vector and genre vector is normalized independently. For each candidate:
 
@@ -58,7 +58,7 @@ Spotify development mode currently requires the app owner to have Premium and li
 
 ### User flow
 
-Connect Spotify in the sidebar and continue in the new tab. After Spotify approval, the callback tab processes the authorization and tells the user to return to the original Songside tab. That tab claims the connection automatically and keeps the generated playlist. The user supplies a playlist name and clicks Create private Spotify playlist. Only the displayed recommendations are exported, in order; the seed is excluded.
+Connect Spotify above the search form and continue in the new tab. After Spotify approval, the callback tab processes the authorization and tells the user to return to the original Songside tab. That tab claims the connection automatically and keeps the generated playlist. The user supplies a playlist name and clicks Create private Spotify playlist. Only the displayed recommendations are exported, in order; the seed is excluded.
 
 Only playlist-modify-private is requested. The account connection stays in the original Streamlit session and is cleared by Disconnect or session expiry. PKCE verifiers, one-time random state, and a separate claim secret protect the cross-tab exchange. Pending logins expire after ten minutes; tokens are never written to local disk, URLs, logs, feedback storage, or GitHub. They are briefly held in a locked in-memory handoff and then claimed by the initiating session. Keep the original tab open. An app restart or multiple independent server replicas requires reconnecting; a shared secure OAuth store would be needed for a multi-replica deployment.
 

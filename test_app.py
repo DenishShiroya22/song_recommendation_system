@@ -57,12 +57,11 @@ class WebsiteTests(unittest.TestCase):
         app.selectbox[0].select("5SuOikwiRyPMVoIQDJUgSV").run()
         app.button[1].click().run()
         self.assertEqual(len(app.exception),0)
-        self.assertEqual(len(app.session_state["playlist"]),20)
+        self.assertEqual(len(app.session_state["playlist"]),15)
+        self.assertEqual(len(app.slider),0)
+        self.assertEqual(len(app.toggle),0)
         seed = app.session_state["selected_song"]
         self.assertNotIn(seed,[r["track_id"] for r in app.session_state["playlist"]])
-        app.toggle[0].set_value(True).run()
-        app.button[1].click().run()
-        self.assertFalse(any(r["explicit"] for r in app.session_state["playlist"]))
         preview_id = app.session_state["playlist"][0]["track_id"]
         app.selectbox[1].select(preview_id).run()
         self.assertEqual(app.session_state["preview_song"], preview_id)
@@ -105,11 +104,13 @@ class WebsiteTests(unittest.TestCase):
         self.assertEqual(len(app.warning),1)
         self.assertEqual(len(app.exception),0)
 
-    def test_typo_weights_and_feedback(self):
+    def test_typo_fixed_playlist_and_feedback(self):
         app = AppTest.from_file("app.py",default_timeout=60).run()
         app.text_input[0].set_value("shpe of you")
         app.button[0].click().run()
         self.assertIn("7qiZfU4dY1lWllzX7mPBI3",[r["track_id"] for r in app.session_state["matches"]])
+        self.assertFalse(any("matches shown" in c.value or "Exact titles first" in c.value
+                             or "Includes similar spellings" in c.value for c in app.caption))
         app.selectbox[0].select("7qiZfU4dY1lWllzX7mPBI3").run()
         app.button[1].click().run()
         first_request = app.session_state["playlist_request"]
@@ -118,11 +119,10 @@ class WebsiteTests(unittest.TestCase):
         app.get("feedback")[0].set_value(1).run()
         self.assertEqual(len(app.exception),0)
         self.assertNotIn("feedback_error",app.session_state)
-        app.slider(key="audio_percent").set_value(0).run()
-        self.assertEqual(len(app.get("feedback")),0)
         app.button[1].click().run()
         self.assertNotEqual(first_request,app.session_state["playlist_request"])
-        self.assertEqual(app.session_state["playlist"][0]["audio_weight"],0)
+        self.assertEqual(len(app.session_state["playlist"]),15)
+        self.assertEqual(app.session_state["playlist"][0]["audio_weight"],.7)
         self.assertEqual(len(app.exception),0)
 
 if __name__ == "__main__":

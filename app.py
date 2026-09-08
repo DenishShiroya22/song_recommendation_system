@@ -57,21 +57,10 @@ except Exception:
     st.error("The song catalog could not be loaded. Rebuild the model and restart the app.")
     st.stop()
 
-with st.sidebar:
-    st.subheader("Your playlist")
-    count = st.slider("Number of songs", 5, 50, 20, step=5)
-    clean_only = st.toggle("Exclude explicit songs", value=False)
-    audio_percent = st.slider("Match sound vs. genre",0,100,70,step=10,key="audio_percent",
-                              help="0 = genre only; 100 = sound only. Your choice takes effect when you generate a playlist.")
-    audio_weight = audio_percent / 100
-    st.caption(f"Sound {audio_percent}% · Genre {100-audio_percent}%")
-    st.caption("These are ranking preferences, not measured accuracy.")
-    st.divider()
-    st.caption(f"{len(engine.catalog):,} songs to explore")
-    st.caption("Matches are based on sound and genre. Select a recording to get started.")
-    with st.expander("About the playlist"):
-        st.write("Recommendations come from this song catalog. Each Spotify link contains the exact track ID shown here. Spotify controls playback availability. Connect your account to create a private playlist.")
-    render_connection()
+count = 15
+clean_only = False
+audio_weight = 0.7
+render_connection()
 
 with st.form("song_search"):
     query = st.text_input("Song title or artist", placeholder="Try Comedy Gen Hoshino", max_chars=200)
@@ -95,10 +84,6 @@ elif not matches:
     st.info("No songs found. Try fewer words, check the spelling, or search by artist.")
 else:
     lookup = {r["track_id"]:r for r in matches}
-    st.caption(f"{len(matches)} matches shown. Choose your recording below.")
-    st.caption("Exact titles first, then other matches; each group is ordered by dataset popularity. Similar spellings prioritize text relevance, then popularity.")
-    if any(r.get("search_match") == "fuzzy" for r in matches):
-        st.caption("Includes similar spellings. Check the title and artist before choosing.")
     selection_key = "selected_song_" + str(st.session_state.get("search_generation", 0))
     selected = st.selectbox("Choose a song", options=list(lookup), index=None, placeholder="Select the song and artist you want", key=selection_key,
         format_func=lambda key: lookup[key]["track_name"]+" — "+lookup[key]["artists"].replace(";", ", ")+" · "+lookup[key]["album_name"]+" · "+key[-6:])
@@ -137,7 +122,7 @@ else:
         if st.session_state.get("feedback_error"):
             st.warning(st.session_state["feedback_error"])
         if not playlist:
-            st.info("No songs match these settings. Try allowing explicit tracks or choose another song.")
+            st.info("No recommendations found. Choose another song.")
         for rank,track in enumerate(playlist,1):
             with st.container(border=True):
                 number, details, link = st.columns([.4,5,1.8],vertical_alignment="center")
@@ -185,7 +170,7 @@ else:
                 file_name="songside_playlist.txt",mime="text/plain")
             render_export(seed,playlist,request_id)
     elif "playlist" in st.session_state:
-        st.caption("Your selection or settings changed. Generate a new playlist to update the results.")
+        st.caption("Your selection changed. Generate a new playlist to update the results.")
 
 
 

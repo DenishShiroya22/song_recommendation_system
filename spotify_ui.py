@@ -83,7 +83,7 @@ def render_export(seed, playlist, request_id):
         st.caption("Spotify account connection is not enabled on this deployment yet. You can still open tracks or download their links.")
         return
     if not st.session_state.get("spotify_token"):
-        st.caption("Connect Spotify in the sidebar, then return here to save these songs.")
+        st.caption("Connect Spotify above the search form, then return here to save these songs.")
         return
     name = st.text_input("Playlist name",value=("Songside - "+seed["track_name"])[:100],
                          max_chars=100,key="export_name_"+request_id)
