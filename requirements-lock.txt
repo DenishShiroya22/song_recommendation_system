@@ -20,11 +20,14 @@ packaging==26.3
 pandas==2.3.3
 pillow==12.3.0
 protobuf==7.36.1
+psycopg==3.3.5
+psycopg-binary==3.3.5
 pyarrow==25.0.1
 pydeck==0.9.3
 python-dateutil==2.9.0.post0
 python-multipart==0.0.32
 pytz==2026.3.post1
+RapidFuzz==3.14.6
 referencing==0.37.0
 requests==2.34.2
 rpds-py==2026.6.3
