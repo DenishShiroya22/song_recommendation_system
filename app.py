@@ -96,6 +96,7 @@ elif not matches:
 else:
     lookup = {r["track_id"]:r for r in matches}
     st.caption(f"{len(matches)} matches shown. Choose your recording below.")
+    st.caption("Exact titles first, then other matches; each group is ordered by dataset popularity. Similar spellings prioritize text relevance, then popularity.")
     if any(r.get("search_match") == "fuzzy" for r in matches):
         st.caption("Includes similar spellings. Check the title and artist before choosing.")
     selection_key = "selected_song_" + str(st.session_state.get("search_generation", 0))

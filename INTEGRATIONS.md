@@ -4,7 +4,7 @@ Deployed app: https://songrecommendationsystem-wldmstqlaa4q5g4zzxtyg7.streamlit.
 
 ## 1. Fuzzy song search
 
-Exact titles and substring matches appear first. RapidFuzz fills remaining places with similar spellings for queries of at least three characters. A weighted score of at least 78 plus a full-string score of at least 50 avoids matching very short substrings inside nonsense queries. Examples: "shpe of you", "raabtaa", "arjit singh".
+Exact titles appear first, followed by substring matches. Within each group, higher dataset popularity comes first, with title, artist, and track ID breaking ties. Unknown popularity sorts last. This uses the dataset snapshot, not live listening counts. RapidFuzz fills remaining places with similar spellings for queries of at least three characters, ordered by spelling score and then popularity. A weighted score of at least 78 plus a full-string score of at least 50 avoids matching very short substrings inside nonsense queries. Examples: "shpe of you", "raabtaa", "arjit singh".
 
 Users still explicitly choose a recording. Search never treats a spelling match as proof of the intended artist.
 
@@ -77,4 +77,3 @@ Automated tests cover search misspellings, separate-weight math, state resets, r
 - https://developer.spotify.com/documentation/web-api/concepts/quota-modes
 - https://docs.streamlit.io/develop/api-reference/widgets/st.feedback
 - https://rapidfuzz.github.io/RapidFuzz/Usage/process.html
-

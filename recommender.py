@@ -37,6 +37,10 @@ class SongRecommender:
         self.titles = self.catalog.track_name.map(normalize)
         self.artists = self.catalog.artists.map(normalize)
         self.search_text = (self.titles + ' ' + self.artists).tolist()
+        # Older catalogs may omit popularity; unknown values sort below known scores.
+        self.popularity = pd.to_numeric(
+            self.catalog.get('popularity', pd.Series(index=self.catalog.index, dtype=float)),
+            errors='coerce').replace([np.inf, -np.inf], np.nan).fillna(-1)
         self.audio_feature_count = audio_feature_count
         self.audio_unit = self.genre_unit = None
         if 0 < audio_feature_count < self.matrix.shape[1]:
@@ -57,8 +61,10 @@ class SongRecommender:
             mask &= text.str.contains(token,regex=False)
         matches = self.catalog.loc[mask].copy()
         matches['_exact'] = self.titles.loc[mask].eq(query)
-        matches = matches.sort_values(['_exact','track_name','artists','track_id'],ascending=[False,True,True,True])
-        exact_results = matches.drop(columns='_exact').head(limit).to_dict(orient='records')
+        matches['_popularity'] = self.popularity.loc[mask]
+        matches = matches.sort_values(['_exact','_popularity','track_name','artists','track_id'],
+                                      ascending=[False,False,True,True,True])
+        exact_results = matches.drop(columns=['_exact','_popularity']).head(limit).to_dict(orient='records')
         for result in exact_results:
             result['search_match'] = 'exact' if normalize(result['track_name']) == query else 'contains'
         # Preserve exact/substring ordering. Fill remaining places with typo matches.
@@ -68,10 +74,10 @@ class SongRecommender:
         fuzzy_scores = {}
         for choices in (self.titles.tolist(), self.artists.tolist(), self.search_text):
             for _, score, index in process.extract(query, choices, scorer=fuzz.WRatio,
-                                                   score_cutoff=78, limit=limit * 3):
+                                                   score_cutoff=78, limit=None):
                 if index not in present and fuzz.ratio(query, choices[index]) >= 50:
                     fuzzy_scores[index] = max(score, fuzzy_scores.get(index, 0))
-        for index in sorted(fuzzy_scores, key=lambda i: (-fuzzy_scores[i], self.catalog.iloc[i].track_id)):
+        for index in sorted(fuzzy_scores, key=lambda i: (-fuzzy_scores[i], -self.popularity.iloc[i], self.catalog.iloc[i].track_id)):
             result = self.catalog.iloc[index].to_dict()
             result['search_match'] = 'fuzzy'
             exact_results.append(result)
