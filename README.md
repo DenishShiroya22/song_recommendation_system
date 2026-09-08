@@ -1,5 +1,9 @@
 # Song recommendation dataset
 
+Live website: https://songrecommendationsystem-wldmstqlaa4q5g4zzxtyg7.streamlit.app/
+
+New features: typo-tolerant search, separate sound/genre weights, thumbs-up/down feedback, and private Spotify playlist export. See [INTEGRATIONS.md](INTEGRATIONS.md) for the exact Streamlit Secrets fields and production feedback setup. Spotify export requires a configured client ID; durable cloud feedback requires PostgreSQL.
+
 Dataset preparation for a website that accepts a song and recommends songs with similar audio characteristics, genres, and artists.
 
 ## Current state
@@ -47,7 +51,7 @@ Run `python train_recommender.py` to build the cosine k-NN index, then `python r
 
 ## Streamlit website
 
-Start with `python -m streamlit run app.py` (on this Windows setup: `./.venv/Scripts/python.exe -m streamlit run app.py`). Open http://localhost:8501. Search by song/artist, select a recording, choose 5–50 recommendations, optionally exclude explicit tracks, and generate the playlist. Each recommendation has an exact-track Spotify link, and one recommendation at a time can be played through Spotify's embedded player. Playlist links can be downloaded as text. Spotify-account playlist saving is not connected.
+Start with `python -m streamlit run app.py` (on this Windows setup: `./.venv/Scripts/python.exe -m streamlit run app.py`). Open http://localhost:8501. Search by song/artist, select a recording, choose 5–50 recommendations, adjust sound/genre weights, optionally exclude explicit tracks, and generate the playlist. Rate matches with thumbs up/down. Each recommendation has an exact-track Spotify link and an embedded preview. Download playlist links or connect Spotify to create a private playlist after configuration. Use http://127.0.0.1:8501/ for local Spotify OAuth testing.
 
-The app caches the model between requests and rebuilds the cache when the saved model changes. Run `python -m unittest test_app.py -v` to verify the website flow.
+The app caches the model between requests and rebuilds the cache when the saved model or engine code changes. Run `python -m unittest discover -v` to verify the engine, website, feedback, and mocked Spotify integration.
 

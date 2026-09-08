@@ -1,7 +1,53 @@
 import unittest
+import time
+from unittest.mock import patch
+from spotify_client import SpotifyError, UncertainCreation
 from streamlit.testing.v1 import AppTest
 
 class WebsiteTests(unittest.TestCase):
+    @staticmethod
+    def click_label(app, label):
+        next(button for button in app.button if button.label == label).click().run()
+
+    def connected_playlist(self):
+        app = AppTest.from_file("app.py",default_timeout=60)
+        app.secrets["spotify_client_id"] = "test-client"
+        app.session_state["spotify_token"] = {"access_token":"test", "expires_at":time.time()+1000}
+        app.run()
+        app.text_input[0].set_value("Comedy Gen Hoshino")
+        self.click_label(app,"Search songs")
+        app.selectbox[0].select("5SuOikwiRyPMVoIQDJUgSV").run()
+        self.click_label(app,"Generate playlist")
+        return app
+
+    def test_spotify_export_explicit_click_and_retry_without_duplicate(self):
+        with patch("spotify_ui.SpotifyClient") as client_class:
+            client = client_class.return_value
+            client.create_private_playlist.return_value = "p"*22
+            client.fill_new_playlist.side_effect = [SpotifyError("temporary"),"https://open.spotify.com/playlist/"+"p"*22]
+            app = self.connected_playlist()
+            self.assertFalse(client.create_private_playlist.called)
+            self.click_label(app,"Create private Spotify playlist")
+            self.assertEqual(client.create_private_playlist.call_count,1)
+            self.click_label(app,"Retry adding songs")
+            self.assertEqual(client.create_private_playlist.call_count,1)
+            self.assertEqual(client.fill_new_playlist.call_count,2)
+            app.run()
+            self.assertEqual(client.fill_new_playlist.call_count,2)
+            self.assertEqual(len(app.exception),0)
+            request_id = app.session_state["playlist_request"]
+            self.assertEqual(app.session_state["spotify_exports"][request_id]["status"],"saved")
+
+    def test_spotify_uncertain_creation_does_not_repeat(self):
+        with patch("spotify_ui.SpotifyClient") as client_class:
+            client_class.return_value.create_private_playlist.side_effect = UncertainCreation("Reply lost")
+            app = self.connected_playlist()
+            self.click_label(app,"Create private Spotify playlist")
+            app.run()
+            self.assertEqual(client_class.return_value.create_private_playlist.call_count,1)
+            self.assertFalse(any(b.label == "Create private Spotify playlist" for b in app.button))
+            self.assertEqual(len(app.exception),0)
+
     def test_search_generate_and_reset(self):
         app = AppTest.from_file("app.py",default_timeout=60).run()
         self.assertEqual(len(app.exception),0)
@@ -57,6 +103,26 @@ class WebsiteTests(unittest.TestCase):
         app = AppTest.from_file("app.py",default_timeout=60).run()
         app.button[0].click().run()
         self.assertEqual(len(app.warning),1)
+        self.assertEqual(len(app.exception),0)
+
+    def test_typo_weights_and_feedback(self):
+        app = AppTest.from_file("app.py",default_timeout=60).run()
+        app.text_input[0].set_value("shpe of you")
+        app.button[0].click().run()
+        self.assertIn("7qiZfU4dY1lWllzX7mPBI3",[r["track_id"] for r in app.session_state["matches"]])
+        app.selectbox[0].select("7qiZfU4dY1lWllzX7mPBI3").run()
+        app.button[1].click().run()
+        first_request = app.session_state["playlist_request"]
+        self.assertEqual(app.session_state["playlist"][0]["audio_weight"],.7)
+        self.assertTrue(app.session_state["feedback_ready"])
+        app.get("feedback")[0].set_value(1).run()
+        self.assertEqual(len(app.exception),0)
+        self.assertNotIn("feedback_error",app.session_state)
+        app.slider(key="audio_percent").set_value(0).run()
+        self.assertEqual(len(app.get("feedback")),0)
+        app.button[1].click().run()
+        self.assertNotEqual(first_request,app.session_state["playlist_request"])
+        self.assertEqual(app.session_state["playlist"][0]["audio_weight"],0)
         self.assertEqual(len(app.exception),0)
 
 if __name__ == "__main__":

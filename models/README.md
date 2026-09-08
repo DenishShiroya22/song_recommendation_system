@@ -1,5 +1,7 @@
 # Song recommendation engine
 
+Update: the website now uses separately normalized sound/genre scores with a user-controlled weight (default 70/30), and search supports misspellings. The combined-cosine model described below remains available as the legacy baseline when audio_weight is omitted. See ../INTEGRATIONS.md for the new formula, feedback evaluation, and Spotify export setup.
+
 The saved engine uses sklearn.neighbors.NearestNeighbors(metric="cosine", algorithm="brute", n_jobs=-1). Fitting stores the catalog feature vectors. Each request calculates the nearest neighbors; no regression/classification target or static predictive formula is learned.
 
 ## Run

@@ -1,10 +1,29 @@
 """Run: python -m streamlit run app.py"""
 import html
 import json
+import uuid
+from pathlib import Path
 import streamlit as st
 from recommender import SongRecommender, DEFAULT_MODEL
+from feedback_store import FeedbackStore
+from spotify_ui import setting, handle_callback, render_connection, render_export
 
 st.set_page_config(page_title="Songside · Find your next song", page_icon="🎧", layout="wide")
+handle_callback()
+
+@st.cache_resource
+def feedback_store(database_url):
+    return FeedbackStore(database_url)
+
+def record_vote(request_id, track_id, widget_key):
+    try:
+        feedback_store(setting("feedback_database_url")).vote(
+            st.session_state["listener_session"],request_id,track_id,st.session_state[widget_key])
+        st.session_state.pop("feedback_error",None)
+    except Exception:
+        st.session_state["feedback_error"] = "Your rating could not be saved. Please try again."
+
+st.session_state.setdefault("listener_session",uuid.uuid4().hex)
 st.markdown("""
 <style>
 .stApp {background: #101415;}
@@ -21,7 +40,7 @@ h1 {letter-spacing: -0.055em; font-size: 3.5rem !important;}
 """, unsafe_allow_html=True)
 
 @st.cache_resource(show_spinner="Loading the song catalog…")
-def load_engine(model_timestamp):
+def load_engine(model_timestamp, engine_timestamp):
     return SongRecommender.load()
 
 st.markdown('<div class="eyebrow">SONGSIDE / MUSIC DISCOVERY</div>', unsafe_allow_html=True)
@@ -33,7 +52,7 @@ if not DEFAULT_MODEL.exists():
     st.caption("Setup: run python train_recommender.py, then restart this app.")
     st.stop()
 try:
-    engine = load_engine(DEFAULT_MODEL.stat().st_mtime_ns)
+    engine = load_engine(DEFAULT_MODEL.stat().st_mtime_ns, Path(__file__).with_name("recommender.py").stat().st_mtime_ns)
 except Exception:
     st.error("The song catalog could not be loaded. Rebuild the model and restart the app.")
     st.stop()
@@ -42,11 +61,17 @@ with st.sidebar:
     st.subheader("Your playlist")
     count = st.slider("Number of songs", 5, 50, 20, step=5)
     clean_only = st.toggle("Exclude explicit songs", value=False)
+    audio_percent = st.slider("Match sound vs. genre",0,100,70,step=10,key="audio_percent",
+                              help="0 = genre only; 100 = sound only. Your choice takes effect when you generate a playlist.")
+    audio_weight = audio_percent / 100
+    st.caption(f"Sound {audio_percent}% · Genre {100-audio_percent}%")
+    st.caption("These are ranking preferences, not measured accuracy.")
     st.divider()
     st.caption(f"{len(engine.catalog):,} songs to explore")
     st.caption("Matches are based on sound and genre. Select a recording to get started.")
     with st.expander("About the playlist"):
-        st.write("Recommendations come from this song catalog. Each Spotify link contains the exact track ID shown here. Spotify may change playback because of your plan, queue, region, or shuffle settings. Saving a playlist directly to your Spotify account is not connected.")
+        st.write("Recommendations come from this song catalog. Each Spotify link contains the exact track ID shown here. Spotify controls playback availability. Connect your account to create a private playlist.")
+    render_connection()
 
 with st.form("song_search"):
     query = st.text_input("Song title or artist", placeholder="Try Comedy Gen Hoshino", max_chars=200)
@@ -71,6 +96,8 @@ elif not matches:
 else:
     lookup = {r["track_id"]:r for r in matches}
     st.caption(f"{len(matches)} matches shown. Choose your recording below.")
+    if any(r.get("search_match") == "fuzzy" for r in matches):
+        st.caption("Includes similar spellings. Check the title and artist before choosing.")
     selection_key = "selected_song_" + str(st.session_state.get("search_generation", 0))
     selected = st.selectbox("Choose a song", options=list(lookup), index=None, placeholder="Select the song and artist you want", key=selection_key,
         format_func=lambda key: lookup[key]["track_name"]+" — "+lookup[key]["artists"].replace(";", ", ")+" · "+lookup[key]["album_name"]+" · "+key[-6:])
@@ -82,16 +109,32 @@ else:
     st.markdown('<div class="hero"><div class="small-label">YOUR STARTING TRACK</div><h2>'+html.escape(seed["track_name"])+'</h2><div>'+html.escape(seed["artists"].replace(";", ", "))+'</div><p class="track-artist">'+html.escape(seed["track_genre"].replace(";", " · "))+'</p></div>',unsafe_allow_html=True)
     st.caption("Recording: " + seed["album_name"])
     st.link_button("Open this recording in Spotify ↗", seed["spotify_url"])
-    signature = (selected,count,clean_only)
+    signature = (selected,count,clean_only,audio_weight)
     if st.button("Generate playlist",type="primary"):
         with st.spinner("Finding your next favorites…"):
-            st.session_state["playlist"] = engine.recommend(selected,k=count,exclude_explicit=clean_only)
+            st.session_state["playlist"] = engine.recommend(selected,k=count,exclude_explicit=clean_only,audio_weight=audio_weight)
             st.session_state["playlist_signature"] = signature
+            request_id = uuid.uuid4().hex
+            st.session_state["playlist_request"] = request_id
+            try:
+                feedback_store(setting("feedback_database_url")).record_impressions(
+                    st.session_state["listener_session"],selected,st.session_state["playlist"],audio_weight,request_id)
+                st.session_state["feedback_ready"] = True
+                st.session_state.pop("feedback_error",None)
+            except Exception:
+                st.session_state["feedback_ready"] = False
+                st.session_state["feedback_error"] = "Ratings are temporarily unavailable. You can still use your playlist."
     if st.session_state.get("playlist_signature") == signature:
         playlist = st.session_state.get("playlist",[])
+        request_id = st.session_state.get("playlist_request", "legacy")
         st.divider()
         st.subheader("Your next listens")
         st.caption(f"{len(playlist)} songs inspired by "+seed["track_name"])
+        st.caption("Rate each match to help evaluate recommendations. Ratings use a random browser-session ID, with no Spotify account details.")
+        if not setting("feedback_database_url"):
+            st.caption("Ratings are stored temporarily on this server and may reset when the app restarts.")
+        if st.session_state.get("feedback_error"):
+            st.warning(st.session_state["feedback_error"])
         if not playlist:
             st.info("No songs match these settings. Try allowing explicit tracks or choose another song.")
         for rank,track in enumerate(playlist,1):
@@ -107,6 +150,13 @@ else:
                 if str(track["explicit"]).lower()=="true":
                     reasons.append("Explicit")
                 details.caption(" · ".join(reasons))
+                if "audio_similarity" in track:
+                    details.caption(f"Sound match {track['audio_similarity']:.2f} · Genre match {track['genre_similarity']:.2f}")
+                if st.session_state.get("feedback_ready"):
+                    with details:
+                        vote_key = "vote_"+request_id+"_"+track["track_id"]
+                        st.feedback("thumbs",key=vote_key,on_change=record_vote,
+                                    args=(request_id,track["track_id"],vote_key))
                 link.link_button("Open in Spotify ↗",track["spotify_url"])
         if playlist:
             preview_lookup = {track["track_id"]: track for track in playlist}
@@ -115,7 +165,7 @@ else:
                 options=list(preview_lookup),
                 index=None,
                 placeholder="Choose a song to play inside this page",
-                key="preview_song_" + selected + "_" + str(count) + "_" + str(clean_only),
+                key="preview_song_" + request_id,
                 format_func=lambda key: preview_lookup[key]["track_name"] + " — " + preview_lookup[key]["artists"].replace(";", ", "),
             )
             if preview_id:
@@ -132,6 +182,7 @@ else:
             st.download_button("Download playlist links",
                 data="\n".join(r["spotify_url"] for r in playlist),
                 file_name="songside_playlist.txt",mime="text/plain")
+            render_export(seed,playlist,request_id)
     elif "playlist" in st.session_state:
         st.caption("Your selection or settings changed. Generate a new playlist to update the results.")
 
